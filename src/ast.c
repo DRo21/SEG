@@ -12,9 +12,11 @@
 #include <stdio.h>
 #include "ast.h"
 
-ASTNode* create_var_decl_node(VarType var_type, const char* name, ASTNode* value) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
-    if (!node) {
+ASTNode *create_var_decl_node(VarType var_type, const char *name, ASTNode *value)
+{
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    if (!node)
+    {
         fprintf(stderr, "Error: Failed to allocate memory for AST node.\n");
         exit(1);
     }
@@ -30,9 +32,11 @@ ASTNode* create_var_decl_node(VarType var_type, const char* name, ASTNode* value
     return node;
 }
 
-ASTNode* create_binary_expr_node(TokenType op, ASTNode* left, ASTNode* right) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
-    if (!node) {
+ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right)
+{
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    if (!node)
+    {
         fprintf(stderr, "Error: Failed to allocate memory for AST node.\n");
         exit(1);
     }
@@ -47,9 +51,11 @@ ASTNode* create_binary_expr_node(TokenType op, ASTNode* left, ASTNode* right) {
     return node;
 }
 
-ASTNode* create_number_literal_node(const char* literal) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
-    if (!node) {
+ASTNode *create_number_literal_node(const char *literal)
+{
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    if (!node)
+    {
         fprintf(stderr, "Error: Failed to allocate memory for AST node.\n");
         exit(1);
     }
@@ -64,9 +70,11 @@ ASTNode* create_number_literal_node(const char* literal) {
     return node;
 }
 
-ASTNode* create_identifier_node(const char* name) {
-    ASTNode* node = (ASTNode*)malloc(sizeof(ASTNode));
-    if (!node) {
+ASTNode *create_identifier_node(const char *name)
+{
+    ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
+    if (!node)
+    {
         fprintf(stderr, "Error: Failed to allocate memory for AST node.\n");
         exit(1);
     }
@@ -81,21 +89,33 @@ ASTNode* create_identifier_node(const char* name) {
     return node;
 }
 
-void free_ast(ASTNode* node) {
-    while (node) {
-        ASTNode* next = node->next;
+void free_ast(ASTNode *node)
+{
+    while (node)
+    {
+        ASTNode *next = node->next;
 
-        if (node->type == AST_VAR_DECL) {
+        if (node->type == AST_VAR_DECL)
+        {
             free(node->name);
-            if (node->value) {
+            if (node->value)
+            {
                 free_ast(node->value);
             }
-        } else if (node->type == AST_BINARY_EXPR) {
-            if (node->left) free_ast(node->left);
-            if (node->right) free_ast(node->right);
-        } else if (node->type == AST_NUMBER_LITERAL) {
+        }
+        else if (node->type == AST_BINARY_EXPR)
+        {
+            if (node->left)
+                free_ast(node->left);
+            if (node->right)
+                free_ast(node->right);
+        }
+        else if (node->type == AST_NUMBER_LITERAL)
+        {
             free(node->literal);
-        } else if (node->type == AST_IDENTIFIER) {
+        }
+        else if (node->type == AST_IDENTIFIER)
+        {
             free(node->name);
         }
 

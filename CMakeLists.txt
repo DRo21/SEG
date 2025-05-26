@@ -12,6 +12,8 @@ set(SOURCES
     src/lexer.c
     src/parser.c
     src/ast.c
+    src/codegen.c
+    src/symbol.c
 )
 
 # Executable

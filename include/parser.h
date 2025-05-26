@@ -21,7 +21,7 @@
  */
 typedef struct
 {
-    Lexer* lexer;        ///< Pointer to the associated lexer
+    Lexer *lexer;        ///< Pointer to the associated lexer
     Token current_token; ///< Current token being parsed
 } Parser;
 
@@ -31,7 +31,7 @@ typedef struct
  * @param parser Pointer to the parser state
  * @param lexer Pointer to the lexer to use for token input
  */
-void parser_init(Parser* parser, Lexer* lexer);
+void parser_init(Parser *parser, Lexer *lexer);
 
 /**
  * @brief Parse the entire SEG program
@@ -41,7 +41,7 @@ void parser_init(Parser* parser, Lexer* lexer);
  * @param parser Pointer to the parser state
  * @return Pointer to the head of the AST linked list (or NULL if empty)
  */
-ASTNode* parse_program(Parser* parser);
+ASTNode *parse_program(Parser *parser);
 
 /**
  * @brief Parse a single variable declaration (e.g., int x = 5 + 3;)
@@ -52,7 +52,7 @@ ASTNode* parse_program(Parser* parser);
  * @param parser Pointer to the parser state
  * @return Pointer to the created ASTNode for the variable declaration
  */
-ASTNode* parse_var_decl(Parser* parser);
+ASTNode *parse_var_decl(Parser *parser);
 
 /**
  * @brief Parse an expression (supports +, -, *, /, and parentheses)
@@ -64,6 +64,6 @@ ASTNode* parse_var_decl(Parser* parser);
  * @param parser Pointer to the parser state
  * @return Pointer to the AST node representing the parsed expression
  */
-ASTNode* parse_expression(Parser* parser);
+ASTNode *parse_expression(Parser *parser);
 
 #endif // PARSER_H

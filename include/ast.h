@@ -18,10 +18,10 @@
  */
 typedef enum
 {
-    AST_VAR_DECL,     ///< Variable declaration node (e.g., int x = 5;)
-    AST_BINARY_EXPR,  ///< Binary operation node (e.g., 5 + 3)
+    AST_VAR_DECL,       ///< Variable declaration node (e.g., int x = 5;)
+    AST_BINARY_EXPR,    ///< Binary operation node (e.g., 5 + 3)
     AST_NUMBER_LITERAL, ///< Numeric literal (e.g., 5, 3.14)
-    AST_IDENTIFIER    ///< Variable reference (e.g., x)
+    AST_IDENTIFIER      ///< Variable reference (e.g., x)
 } ASTNodeType;
 
 /**
@@ -41,26 +41,26 @@ typedef enum
  */
 typedef struct ASTNode
 {
-    ASTNodeType type;    ///< Type of this AST node
+    ASTNodeType type; ///< Type of this AST node
 
     // For AST_VAR_DECL:
-    VarType var_type;    ///< Variable type (int, float)
-    char* name;          ///< Variable name (e.g., "x")
-    struct ASTNode* value; ///< Expression assigned to the variable
+    VarType var_type;      ///< Variable type (int, float)
+    char *name;            ///< Variable name (e.g., "x")
+    struct ASTNode *value; ///< Expression assigned to the variable
 
     // For AST_BINARY_EXPR:
-    TokenType op;        ///< Operator (e.g., TOKEN_PLUS, TOKEN_MINUS)
-    struct ASTNode* left;  ///< Left operand
-    struct ASTNode* right; ///< Right operand
+    TokenType op;          ///< Operator (e.g., TOKEN_PLUS, TOKEN_MINUS)
+    struct ASTNode *left;  ///< Left operand
+    struct ASTNode *right; ///< Right operand
 
     // For AST_NUMBER_LITERAL:
-    char* literal;       ///< String representation of the number
+    char *literal; ///< String representation of the number
 
     // For AST_IDENTIFIER:
     // Use `name` field from AST_VAR_DECL
 
     // Linked list for multiple statements:
-    struct ASTNode* next; ///< Pointer to the next AST node
+    struct ASTNode *next; ///< Pointer to the next AST node
 } ASTNode;
 
 /**
@@ -71,7 +71,7 @@ typedef struct ASTNode
  * @param value Pointer to the AST expression node (value assigned to variable)
  * @return Pointer to the created ASTNode
  */
-ASTNode* create_var_decl_node(VarType var_type, const char* name, ASTNode* value);
+ASTNode *create_var_decl_node(VarType var_type, const char *name, ASTNode *value);
 
 /**
  * @brief Create a binary expression AST node
@@ -81,7 +81,7 @@ ASTNode* create_var_decl_node(VarType var_type, const char* name, ASTNode* value
  * @param right Right operand expression
  * @return Pointer to the created ASTNode
  */
-ASTNode* create_binary_expr_node(TokenType op, ASTNode* left, ASTNode* right);
+ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right);
 
 /**
  * @brief Create a numeric literal AST node
@@ -89,7 +89,7 @@ ASTNode* create_binary_expr_node(TokenType op, ASTNode* left, ASTNode* right);
  * @param literal String representation of the number (e.g., "5", "3.14")
  * @return Pointer to the created ASTNode
  */
-ASTNode* create_number_literal_node(const char* literal);
+ASTNode *create_number_literal_node(const char *literal);
 
 /**
  * @brief Create an identifier AST node
@@ -97,13 +97,13 @@ ASTNode* create_number_literal_node(const char* literal);
  * @param name Variable name (e.g., "x")
  * @return Pointer to the created ASTNode
  */
-ASTNode* create_identifier_node(const char* name);
+ASTNode *create_identifier_node(const char *name);
 
 /**
  * @brief Free the entire AST linked list
  *
  * @param node Pointer to the first node of the AST to free
  */
-void free_ast(ASTNode* node);
+void free_ast(ASTNode *node);
 
 #endif // AST_H
