@@ -1,0 +1,24 @@
+# Build directory
+build/
+
+# Compiled binaries
+*.out
+*.exe
+*.o
+*.obj
+
+# CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Editor files
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
