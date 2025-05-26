@@ -14,6 +14,8 @@ This project includes:
 ```c
 int x = 5;
 float y = 3.14;
+int z = (5 + 3) * 2;
+float a = 3.14 + (x * y);
 ```
 
 ---

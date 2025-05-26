@@ -11,6 +11,29 @@
 #include "parser.h"
 #include "ast.h"
 
+// Recursively print an expression tree
+void print_expression(ASTNode* node) {
+    if (!node) return;
+
+    switch (node->type) {
+        case AST_NUMBER_LITERAL:
+            printf("%s", node->literal);
+            break;
+        case AST_IDENTIFIER:
+            printf("%s", node->name);
+            break;
+        case AST_BINARY_EXPR:
+            printf("(");
+            print_expression(node->left);
+            printf(" %s ", token_type_to_string(node->op));
+            print_expression(node->right);
+            printf(")");
+            break;
+        default:
+            printf("[Unknown Expression]");
+    }
+}
+
 /**
  * @brief Main entry point for the SEG compiler.
  *
@@ -20,17 +43,14 @@
  * @param argv Command-line argument values
  * @return Exit code (0 for success, 1 for failure)
  */
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
         printf("Usage: %s <file.seg>\n", argv[0]);
         return 1;
     }
 
     FILE *source = fopen(argv[1], "r");
-    if (!source)
-    {
+    if (!source) {
         perror("Failed to open file");
         return 1;
     }
@@ -48,14 +68,13 @@ int main(int argc, char *argv[])
     // Print the AST
     printf("=== Parsed AST ===\n");
     ASTNode *node = program;
-    while (node)
-    {
-        if (node->type == AST_VAR_DECL)
-        {
-            printf("VarDecl: type=%s name=%s value=%s\n",
+    while (node) {
+        if (node->type == AST_VAR_DECL) {
+            printf("VarDecl: type=%s name=%s value=",
                    node->var_type == TYPE_INT ? "int" : "float",
-                   node->name,
-                   node->value);
+                   node->name);
+            print_expression(node->value);
+            printf("\n");
         }
         node = node->next;
     }

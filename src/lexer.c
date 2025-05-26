@@ -2,6 +2,7 @@
  * @file lexer.c
  * @brief Lexer implementation for the SEG language compiler.
  *        Converts source code into a stream of tokens for parsing.
+ *        Supports variable declarations, arithmetic operators, and parentheses for expressions.
  * @author Dario Romandini
  */
 
@@ -93,7 +94,7 @@ Token lexer_next_token(Lexer *lexer)
         return token;
     }
 
-    // Single-character tokens (operators, punctuation)
+    // Single-character tokens (operators, punctuation, parentheses)
     token.lexeme = malloc(2);
     token.lexeme[0] = c;
     token.lexeme[1] = '\0';
@@ -117,6 +118,12 @@ Token lexer_next_token(Lexer *lexer)
         break;
     case ';':
         token.type = TOKEN_SEMICOLON;
+        break;
+    case '(':
+        token.type = TOKEN_LPAREN;
+        break;
+    case ')':
+        token.type = TOKEN_RPAREN;
         break;
     default:
         token.type = TOKEN_ERROR;
@@ -161,6 +168,10 @@ const char *token_type_to_string(TokenType type)
         return "SLASH";
     case TOKEN_SEMICOLON:
         return "SEMICOLON";
+    case TOKEN_LPAREN:
+        return "LPAREN";
+    case TOKEN_RPAREN:
+        return "RPAREN";
     case TOKEN_ERROR:
         return "ERROR";
     default:

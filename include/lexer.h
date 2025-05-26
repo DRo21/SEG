@@ -1,7 +1,7 @@
 /**
  * @file lexer.h
  * @brief Lexer interface for the SEG language compiler.
- *        Provides functions to tokenize input source code.
+ *        Provides functions to tokenize input source code, including support for arithmetic operators and parentheses.
  * @author Dario Romandini
  */
 

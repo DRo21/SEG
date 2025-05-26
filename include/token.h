@@ -31,6 +31,8 @@ typedef enum {
 
     // Punctuation
     TOKEN_SEMICOLON,     ///< ';' statement terminator
+    TOKEN_LPAREN,        ///< '(' left parenthesis
+    TOKEN_RPAREN,        ///< ')' right parenthesis
 
     // Error handling
     TOKEN_ERROR          ///< Unknown or invalid token
