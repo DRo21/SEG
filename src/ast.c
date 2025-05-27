@@ -22,6 +22,7 @@ ASTNode *create_var_decl_node(VarType var_type, const char *name, ASTNode *value
     }
     node->type = AST_VAR_DECL;
     node->var_type = var_type;
+    node->result_type = var_type; // By definition, declared type
     node->name = strdup(name);
     node->value = value;
     node->op = 0;
@@ -47,11 +48,12 @@ ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right)
     node->name = NULL;
     node->value = NULL;
     node->literal = NULL;
+    node->result_type = TYPE_INT;
     node->next = NULL;
     return node;
 }
 
-ASTNode *create_number_literal_node(const char *literal)
+ASTNode *create_number_literal_node(const char *literal, VarType type)
 {
     ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
     if (!node)
@@ -61,6 +63,7 @@ ASTNode *create_number_literal_node(const char *literal)
     }
     node->type = AST_NUMBER_LITERAL;
     node->literal = strdup(literal);
+    node->result_type = type;
     node->name = NULL;
     node->value = NULL;
     node->op = 0;
@@ -80,6 +83,7 @@ ASTNode *create_identifier_node(const char *name)
     }
     node->type = AST_IDENTIFIER;
     node->name = strdup(name);
+    node->result_type = TYPE_INT;
     node->literal = NULL;
     node->value = NULL;
     node->op = 0;

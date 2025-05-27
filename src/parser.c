@@ -2,18 +2,7 @@
  * @file parser.c
  * @brief Parser implementation for the SEG language compiler.
  *        Handles parsing of variable declarations and arithmetic expressions into an AST.
- *        Supports types: int, float.
- *        Grammar (simplified):
- *          program        → (var_decl)* EOF
- *          var_decl       → (int|float) IDENTIFIER '=' expression ';'
- *          expression     → term (('+'|'-') term)*
- *          term           → factor (('*'|'/') factor)*
- *          factor         → NUMBER | IDENTIFIER | '(' expression ')'
- *
- *        Example:
- *          int x = 5 + 3;
- *          float y = 1.5 * (x - 2);
- *
+ *        Supports types: int, float, and type promotion warnings.
  * @author Dario Romandini
  */
 
@@ -21,15 +10,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
+#include "symbol.h" // For type lookup (later if needed)
 
-// Helper: Advance to the next token
+// Helpers
 void advance(Parser *parser)
 {
     token_free(&parser->current_token);
     parser->current_token = lexer_next_token(parser->lexer);
 }
 
-// Helper: Expect a specific token type, exit on mismatch
 void expect(Parser *parser, TokenType type)
 {
     if (parser->current_token.type != type)
@@ -83,6 +72,16 @@ ASTNode *parse_var_decl(Parser *parser)
 
     ASTNode *value = parse_expression(parser);
 
+    // Type checking: Warn if var type and expr type mismatch
+    if (value->result_type != var_type)
+    {
+        printf("[Parser Warning] Type mismatch in assignment to '%s': declared %s, assigned %s (line %d). Implicit conversion applied.\n",
+               name,
+               var_type == TYPE_INT ? "int" : "float",
+               value->result_type == TYPE_INT ? "int" : "float",
+               parser->current_token.line);
+    }
+
     expect(parser, TOKEN_SEMICOLON);
     advance(parser);
 
@@ -100,7 +99,22 @@ ASTNode *parse_expression(Parser *parser)
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_term(parser);
+
+        // Type promotion
+        if (node->result_type != right->result_type)
+        {
+            printf("[Parser Warning] Mixing int and float in expression: promoting int to float (line %d)\n",
+                   parser->current_token.line);
+            node->result_type = TYPE_FLOAT;
+            right->result_type = TYPE_FLOAT;
+        }
+        else
+        {
+            node->result_type = node->result_type;
+        }
+
         node = create_binary_expr_node(op, node, right);
+        node->result_type = right->result_type; // Propagate type
     }
 
     return node;
@@ -117,7 +131,22 @@ ASTNode *parse_term(Parser *parser)
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_factor(parser);
+
+        // Type promotion
+        if (node->result_type != right->result_type)
+        {
+            printf("[Parser Warning] Mixing int and float in expression: promoting int to float (line %d)\n",
+                   parser->current_token.line);
+            node->result_type = TYPE_FLOAT;
+            right->result_type = TYPE_FLOAT;
+        }
+        else
+        {
+            node->result_type = node->result_type;
+        }
+
         node = create_binary_expr_node(op, node, right);
+        node->result_type = right->result_type;
     }
 
     return node;
@@ -130,12 +159,20 @@ ASTNode *parse_factor(Parser *parser)
 
     if (parser->current_token.type == TOKEN_NUMBER)
     {
-        node = create_number_literal_node(parser->current_token.lexeme);
+        // Detect if it's a float by presence of '.' in lexeme
+        if (strchr(parser->current_token.lexeme, '.'))
+            node = create_number_literal_node(parser->current_token.lexeme, TYPE_FLOAT);
+        else
+            node = create_number_literal_node(parser->current_token.lexeme, TYPE_INT);
+
+        node->result_type = node->result_type; // Already set in create_number_literal_node
         advance(parser);
     }
     else if (parser->current_token.type == TOKEN_IDENTIFIER)
     {
         node = create_identifier_node(parser->current_token.lexeme);
+        // For now, assume TYPE_INT; later, lookup from symbol table
+        node->result_type = TYPE_INT;
         advance(parser);
     }
     else if (parser->current_token.type == TOKEN_LPAREN)
@@ -155,7 +192,6 @@ ASTNode *parse_factor(Parser *parser)
     return node;
 }
 
-// Parse the entire program: (var_decl)* EOF
 ASTNode *parse_program(Parser *parser)
 {
     ASTNode *head = NULL;

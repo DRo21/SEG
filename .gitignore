@@ -18,6 +18,7 @@ Makefile
 *.swo
 *.bak
 *.tmp
+.idea/
 
 # OS files
 .DS_Store

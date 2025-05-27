@@ -41,7 +41,8 @@ typedef enum
  */
 typedef struct ASTNode
 {
-    ASTNodeType type; ///< Type of this AST node
+    ASTNodeType type;   ///< Type of this AST node
+    VarType result_type;///< The type of this node's value (int/float) after type checking
 
     // For AST_VAR_DECL:
     VarType var_type;      ///< Variable type (int, float)
@@ -89,7 +90,7 @@ ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right);
  * @param literal String representation of the number (e.g., "5", "3.14")
  * @return Pointer to the created ASTNode
  */
-ASTNode *create_number_literal_node(const char *literal);
+ASTNode *create_number_literal_node(const char *literal, VarType type);
 
 /**
  * @brief Create an identifier AST node
