@@ -2,7 +2,7 @@
  * @file main.c
  * @brief Entry point for the SEG language compiler.
  *        Initializes the lexer and parser, processes SEG source code,
- *        and prints the parsed Abstract Syntax Tree (AST).
+ *        prints the parsed Abstract Syntax Tree (AST), and generates assembly code.
  * @author Dario Romandini
  */
 
@@ -12,29 +12,31 @@
 #include "ast.h"
 #include "codegen.h"
 
-// Recursively print an expression tree
-void print_expression(ASTNode *node)
-{
+/**
+ * @brief Recursively print an expression tree.
+ *
+ * @param node The AST node representing the expression.
+ */
+void print_expression(ASTNode *node) {
     if (!node)
         return;
 
-    switch (node->type)
-    {
-    case AST_NUMBER_LITERAL:
-        printf("%s", node->literal);
-        break;
-    case AST_IDENTIFIER:
-        printf("%s", node->name);
-        break;
-    case AST_BINARY_EXPR:
-        printf("(");
-        print_expression(node->left);
-        printf(" %s ", token_type_to_string(node->op));
-        print_expression(node->right);
-        printf(")");
-        break;
-    default:
-        printf("[Unknown Expression]");
+    switch (node->type) {
+        case AST_LITERAL:
+            printf("%s", node->literal);
+            break;
+        case AST_IDENTIFIER:
+            printf("%s", node->name);
+            break;
+        case AST_BINARY_EXPR:
+            printf("(");
+            print_expression(node->left);
+            printf(" %s ", token_type_to_string(node->op));
+            print_expression(node->right);
+            printf(")");
+            break;
+        default:
+            printf("[Unknown Expression]");
     }
 }
 
@@ -43,21 +45,18 @@ void print_expression(ASTNode *node)
  *
  * Usage: ./seg <source.seg>
  *
- * @param argc Number of command-line arguments
- * @param argv Command-line argument values
- * @return Exit code (0 for success, 1 for failure)
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument values.
+ * @return Exit code (0 for success, 1 for failure).
  */
-int main(int argc, char *argv[])
-{
-    if (argc < 2)
-    {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
         printf("Usage: %s <file.seg>\n", argv[0]);
         return 1;
     }
 
     FILE *source = fopen(argv[1], "r");
-    if (!source)
-    {
+    if (!source) {
         perror("Failed to open file");
         return 1;
     }
@@ -75,23 +74,35 @@ int main(int argc, char *argv[])
     // Print the AST
     printf("=== Parsed AST ===\n");
     ASTNode *node = program;
-    while (node)
-    {
-        if (node->type == AST_VAR_DECL)
-        {
-            printf("VarDecl: type=%s name=%s value=",
-                   node->var_type == TYPE_INT ? "int" : "float",
-                   node->name);
+    while (node) {
+        if (node->type == AST_VAR_DECL) {
+            const char *type_str = "";
+            switch (node->var_type) {
+                case TYPE_INT: type_str = "int";
+                    break;
+                case TYPE_FLOAT: type_str = "float";
+                    break;
+                case TYPE_BOOL: type_str = "bool";
+                    break;
+                case TYPE_CHAR: type_str = "char";
+                    break;
+                case TYPE_STRING: type_str = "string";
+                    break;
+            }
+
+            printf("VarDecl: type=%s name=%s value=", type_str, node->name);
             print_expression(node->value);
             printf("\n");
         }
         node = node->next;
     }
 
+    // Generate assembly code
     FILE *asm_file = fopen("output.s", "w");
-    if (!asm_file)
-    {
+    if (!asm_file) {
         perror("Failed to open output file");
+        free_ast(program);
+        fclose(source);
         return 1;
     }
     generate_program(program, asm_file);

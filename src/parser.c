@@ -1,8 +1,7 @@
 /**
  * @file parser.c
  * @brief Parser implementation for the SEG language compiler.
- *        Handles parsing of variable declarations and arithmetic expressions into an AST.
- *        Supports types: int, float, and type promotion warnings.
+ *        Handles variable declarations, expressions, literals, and type checking.
  * @author Dario Romandini
  */
 
@@ -10,19 +9,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
-#include "symbol.h" // For type lookup (later if needed)
+#include "symbol.h"
 
-// Helpers
-void advance(Parser *parser)
-{
+static void advance(Parser *parser) {
     token_free(&parser->current_token);
     parser->current_token = lexer_next_token(parser->lexer);
 }
 
-void expect(Parser *parser, TokenType type)
-{
-    if (parser->current_token.type != type)
-    {
+static void expect(Parser *parser, TokenType type) {
+    if (parser->current_token.type != type) {
         printf("[Parser Error] Expected %s, got %s (line %d)\n",
                token_type_to_string(type),
                token_type_to_string(parser->current_token.type),
@@ -31,38 +26,38 @@ void expect(Parser *parser, TokenType type)
     }
 }
 
-// Forward declarations
 ASTNode *parse_expression(Parser *parser);
+
 ASTNode *parse_term(Parser *parser);
+
 ASTNode *parse_factor(Parser *parser);
 
-void parser_init(Parser *parser, Lexer *lexer)
-{
+void parser_init(Parser *parser, Lexer *lexer) {
     parser->lexer = lexer;
     parser->current_token = lexer_next_token(lexer);
 }
 
-// Parse a variable declaration: (int|float) IDENTIFIER '=' expression ';'
-ASTNode *parse_var_decl(Parser *parser)
-{
+ASTNode *parse_var_decl(Parser *parser) {
     VarType var_type;
 
-    if (parser->current_token.type == TOKEN_INT)
-    {
-        var_type = TYPE_INT;
+    switch (parser->current_token.type) {
+        case TOKEN_INT: var_type = TYPE_INT;
+            break;
+        case TOKEN_FLOAT: var_type = TYPE_FLOAT;
+            break;
+        case TOKEN_BOOL: var_type = TYPE_BOOL;
+            break;
+        case TOKEN_CHAR: var_type = TYPE_CHAR;
+            break;
+        case TOKEN_STRING: var_type = TYPE_STRING;
+            break;
+        default:
+            printf("[Parser Error] Expected type keyword, got %s\n",
+                   token_type_to_string(parser->current_token.type));
+            exit(1);
     }
-    else if (parser->current_token.type == TOKEN_FLOAT)
-    {
-        var_type = TYPE_FLOAT;
-    }
-    else
-    {
-        printf("[Parser Error] Expected type keyword (int/float), got %s\n",
-               token_type_to_string(parser->current_token.type));
-        exit(1);
-    }
-    advance(parser);
 
+    advance(parser);
     expect(parser, TOKEN_IDENTIFIER);
     char *name = strdup(parser->current_token.lexeme);
     advance(parser);
@@ -72,13 +67,9 @@ ASTNode *parse_var_decl(Parser *parser)
 
     ASTNode *value = parse_expression(parser);
 
-    // Type checking: Warn if var type and expr type mismatch
-    if (value->result_type != var_type)
-    {
-        printf("[Parser Warning] Type mismatch in assignment to '%s': declared %s, assigned %s (line %d). Implicit conversion applied.\n",
-               name,
-               var_type == TYPE_INT ? "int" : "float",
-               value->result_type == TYPE_INT ? "int" : "float",
+    if (value->result_type != var_type) {
+        printf("[Parser Warning] Type mismatch in assignment to '%s': declared %s, assigned %s (line %d).\n",
+               name, token_type_to_string(var_type), token_type_to_string(value->result_type),
                parser->current_token.line);
     }
 
@@ -88,61 +79,17 @@ ASTNode *parse_var_decl(Parser *parser)
     return create_var_decl_node(var_type, name, value);
 }
 
-// Parse an expression: term (('+'|'-') term)*
-ASTNode *parse_expression(Parser *parser)
-{
+ASTNode *parse_expression(Parser *parser) {
     ASTNode *node = parse_term(parser);
 
-    while (parser->current_token.type == TOKEN_PLUS ||
-           parser->current_token.type == TOKEN_MINUS)
-    {
+    while (parser->current_token.type == TOKEN_PLUS || parser->current_token.type == TOKEN_MINUS) {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_term(parser);
 
-        // Type promotion
-        if (node->result_type != right->result_type)
-        {
-            printf("[Parser Warning] Mixing int and float in expression: promoting int to float (line %d)\n",
-                   parser->current_token.line);
+        if (node->result_type != right->result_type) {
             node->result_type = TYPE_FLOAT;
             right->result_type = TYPE_FLOAT;
-        }
-        else
-        {
-            node->result_type = node->result_type;
-        }
-
-        node = create_binary_expr_node(op, node, right);
-        node->result_type = right->result_type; // Propagate type
-    }
-
-    return node;
-}
-
-// Parse a term: factor (('*'|'/') factor)*
-ASTNode *parse_term(Parser *parser)
-{
-    ASTNode *node = parse_factor(parser);
-
-    while (parser->current_token.type == TOKEN_STAR ||
-           parser->current_token.type == TOKEN_SLASH)
-    {
-        TokenType op = parser->current_token.type;
-        advance(parser);
-        ASTNode *right = parse_factor(parser);
-
-        // Type promotion
-        if (node->result_type != right->result_type)
-        {
-            printf("[Parser Warning] Mixing int and float in expression: promoting int to float (line %d)\n",
-                   parser->current_token.line);
-            node->result_type = TYPE_FLOAT;
-            right->result_type = TYPE_FLOAT;
-        }
-        else
-        {
-            node->result_type = node->result_type;
         }
 
         node = create_binary_expr_node(op, node, right);
@@ -152,63 +99,74 @@ ASTNode *parse_term(Parser *parser)
     return node;
 }
 
-// Parse a factor: NUMBER | IDENTIFIER | '(' expression ')'
-ASTNode *parse_factor(Parser *parser)
-{
-    ASTNode *node = NULL;
+ASTNode *parse_term(Parser *parser) {
+    ASTNode *node = parse_factor(parser);
 
-    if (parser->current_token.type == TOKEN_NUMBER)
-    {
-        // Detect if it's a float by presence of '.' in lexeme
-        if (strchr(parser->current_token.lexeme, '.'))
-            node = create_number_literal_node(parser->current_token.lexeme, TYPE_FLOAT);
-        else
-            node = create_number_literal_node(parser->current_token.lexeme, TYPE_INT);
+    while (parser->current_token.type == TOKEN_STAR || parser->current_token.type == TOKEN_SLASH) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *right = parse_factor(parser);
 
-        node->result_type = node->result_type; // Already set in create_number_literal_node
-        advance(parser);
-    }
-    else if (parser->current_token.type == TOKEN_IDENTIFIER)
-    {
-        node = create_identifier_node(parser->current_token.lexeme);
-        // For now, assume TYPE_INT; later, lookup from symbol table
-        node->result_type = TYPE_INT;
-        advance(parser);
-    }
-    else if (parser->current_token.type == TOKEN_LPAREN)
-    {
-        advance(parser);
-        node = parse_expression(parser);
-        expect(parser, TOKEN_RPAREN);
-        advance(parser);
-    }
-    else
-    {
-        printf("[Parser Error] Unexpected token: %s\n",
-               token_type_to_string(parser->current_token.type));
-        exit(1);
+        if (node->result_type != right->result_type) {
+            node->result_type = TYPE_FLOAT;
+            right->result_type = TYPE_FLOAT;
+        }
+
+        node = create_binary_expr_node(op, node, right);
+        node->result_type = right->result_type;
     }
 
     return node;
 }
 
-ASTNode *parse_program(Parser *parser)
-{
-    ASTNode *head = NULL;
-    ASTNode *current = NULL;
+ASTNode *parse_factor(Parser *parser) {
+    ASTNode *node = NULL;
 
-    while (parser->current_token.type != TOKEN_EOF)
-    {
+    switch (parser->current_token.type) {
+        case TOKEN_NUMBER:
+            node = create_literal_node(parser->current_token.lexeme,
+                                       strchr(parser->current_token.lexeme, '.') ? TYPE_FLOAT : TYPE_INT);
+            advance(parser);
+            break;
+        case TOKEN_BOOL_LITERAL:
+            node = create_literal_node(parser->current_token.lexeme, TYPE_BOOL);
+            advance(parser);
+            break;
+        case TOKEN_CHAR_LITERAL:
+            node = create_literal_node(parser->current_token.lexeme, TYPE_CHAR);
+            advance(parser);
+            break;
+        case TOKEN_STRING_LITERAL:
+            node = create_literal_node(parser->current_token.lexeme, TYPE_STRING);
+            advance(parser);
+            break;
+        case TOKEN_IDENTIFIER:
+            node = create_identifier_node(parser->current_token.lexeme);
+            node->result_type = TYPE_INT;
+            advance(parser);
+            break;
+        case TOKEN_LPAREN:
+            advance(parser);
+            node = parse_expression(parser);
+            expect(parser, TOKEN_RPAREN);
+            advance(parser);
+            break;
+        default:
+            printf("[Parser Error] Unexpected token: %s\n",
+                   token_type_to_string(parser->current_token.type));
+            exit(1);
+    }
+
+    return node;
+}
+
+ASTNode *parse_program(Parser *parser) {
+    ASTNode *head = NULL, *current = NULL;
+
+    while (parser->current_token.type != TOKEN_EOF) {
         ASTNode *node = parse_var_decl(parser);
-
-        if (!head)
-        {
-            head = node;
-        }
-        else
-        {
-            current->next = node;
-        }
+        if (!head) head = node;
+        else current->next = node;
         current = node;
     }
 

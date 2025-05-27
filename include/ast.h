@@ -1,8 +1,8 @@
 /**
- * @file ast.h
- * @brief AST (Abstract Syntax Tree) structures and functions for SEG language.
- *        Defines nodes for variable declarations, expressions, and binary operations.
- *        Supports variable assignments with arithmetic expressions (e.g., int x = 5 + 3;).
+* @file ast.h
+ * @brief AST (Abstract Syntax Tree) structures and functions for the SEG language.
+ *        Defines node types for variable declarations, expressions, literals, and binary operations.
+ *        Supports various literal types: int, float, bool, char, string.
  * @author Dario Romandini
  */
 
@@ -12,98 +12,67 @@
 #include "token.h"
 
 /**
- * @brief Types of AST nodes
- *
- * AST represents the structure of SEG programs.
+ * @brief Types of AST nodes.
  */
-typedef enum
-{
-    AST_VAR_DECL,       ///< Variable declaration node (e.g., int x = 5;)
-    AST_BINARY_EXPR,    ///< Binary operation node (e.g., 5 + 3)
-    AST_NUMBER_LITERAL, ///< Numeric literal (e.g., 5, 3.14)
-    AST_IDENTIFIER      ///< Variable reference (e.g., x)
+typedef enum {
+    AST_VAR_DECL, /**< Variable declaration (e.g., int x = 5;) */
+    AST_BINARY_EXPR, /**< Binary expression (e.g., x + 3) */
+    AST_LITERAL, /**< Literal node (int, float, bool, char, string) */
+    AST_IDENTIFIER /**< Variable reference (e.g., x) */
 } ASTNodeType;
 
 /**
- * @brief SEG variable types
+ * @brief Supported data types in SEG.
  */
-typedef enum
-{
-    TYPE_INT,  ///< Integer variable
-    TYPE_FLOAT ///< Floating-point variable
+typedef enum {
+    TYPE_INT, /**< Integer */
+    TYPE_FLOAT, /**< Floating-point */
+    TYPE_BOOL, /**< Boolean */
+    TYPE_CHAR, /**< Character */
+    TYPE_STRING /**< String */
 } VarType;
 
 /**
- * @brief AST node structure
- *
- * Represents a single node in the Abstract Syntax Tree.
- * Forms a linked list for multiple statements.
+ * @brief AST node structure.
  */
-typedef struct ASTNode
-{
-    ASTNodeType type;   ///< Type of this AST node
-    VarType result_type;///< The type of this node's value (int/float) after type checking
+typedef struct ASTNode {
+    ASTNodeType type;
+    VarType result_type;
+    VarType var_type;
+    char *name;
+    struct ASTNode *value;
 
-    // For AST_VAR_DECL:
-    VarType var_type;      ///< Variable type (int, float)
-    char *name;            ///< Variable name (e.g., "x")
-    struct ASTNode *value; ///< Expression assigned to the variable
+    TokenType op;
+    struct ASTNode *left;
+    struct ASTNode *right;
 
-    // For AST_BINARY_EXPR:
-    TokenType op;          ///< Operator (e.g., TOKEN_PLUS, TOKEN_MINUS)
-    struct ASTNode *left;  ///< Left operand
-    struct ASTNode *right; ///< Right operand
+    char *literal;
 
-    // For AST_NUMBER_LITERAL:
-    char *literal; ///< String representation of the number
-
-    // For AST_IDENTIFIER:
-    // Use `name` field from AST_VAR_DECL
-
-    // Linked list for multiple statements:
-    struct ASTNode *next; ///< Pointer to the next AST node
+    struct ASTNode *next;
 } ASTNode;
 
 /**
- * @brief Create a new variable declaration AST node
- *
- * @param var_type Variable type (int, float)
- * @param name Variable name
- * @param value Pointer to the AST expression node (value assigned to variable)
- * @return Pointer to the created ASTNode
+ * @brief Create a new variable declaration node.
  */
 ASTNode *create_var_decl_node(VarType var_type, const char *name, ASTNode *value);
 
 /**
- * @brief Create a binary expression AST node
- *
- * @param op Operator token type (e.g., TOKEN_PLUS, TOKEN_MINUS)
- * @param left Left operand expression
- * @param right Right operand expression
- * @return Pointer to the created ASTNode
+ * @brief Create a new binary expression node.
  */
 ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right);
 
 /**
- * @brief Create a numeric literal AST node
- *
- * @param literal String representation of the number (e.g., "5", "3.14")
- * @return Pointer to the created ASTNode
+ * @brief Create a new literal node (int, float, bool, char, string).
  */
-ASTNode *create_number_literal_node(const char *literal, VarType type);
+ASTNode *create_literal_node(const char *value, VarType type);
 
 /**
- * @brief Create an identifier AST node
- *
- * @param name Variable name (e.g., "x")
- * @return Pointer to the created ASTNode
+ * @brief Create a new identifier node.
  */
 ASTNode *create_identifier_node(const char *name);
 
 /**
- * @brief Free the entire AST linked list
- *
- * @param node Pointer to the first node of the AST to free
+ * @brief Free an entire AST linked list, including all subtrees.
  */
 void free_ast(ASTNode *node);
 

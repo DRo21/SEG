@@ -9,10 +9,9 @@
 
 #include "ast.h"
 
-typedef struct Symbol
-{
-    char *name;          ///< Variable name (e.g., "x")
-    VarType type;        ///< Variable type (int/float)
+typedef struct Symbol {
+    char *name; ///< Variable name (e.g., "x")
+    VarType type; ///< Variable type (int/float)
     struct Symbol *next; ///< Linked list pointer
 } Symbol;
 

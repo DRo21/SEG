@@ -9,11 +9,9 @@
 #include <stdio.h>
 #include "symbol.h"
 
-Symbol *add_symbol(Symbol *head, const char *name, VarType type)
-{
-    Symbol *sym = (Symbol *)malloc(sizeof(Symbol));
-    if (!sym)
-    {
+Symbol *add_symbol(Symbol *head, const char *name, VarType type) {
+    Symbol *sym = (Symbol *) malloc(sizeof(Symbol));
+    if (!sym) {
         fprintf(stderr, "Error: Failed to allocate memory for symbol.\n");
         exit(1);
     }
@@ -23,12 +21,9 @@ Symbol *add_symbol(Symbol *head, const char *name, VarType type)
     return sym;
 }
 
-Symbol *lookup_symbol(Symbol *head, const char *name)
-{
-    while (head)
-    {
-        if (strcmp(head->name, name) == 0)
-        {
+Symbol *lookup_symbol(Symbol *head, const char *name) {
+    while (head) {
+        if (strcmp(head->name, name) == 0) {
             return head;
         }
         head = head->next;
@@ -36,10 +31,8 @@ Symbol *lookup_symbol(Symbol *head, const char *name)
     return NULL;
 }
 
-void free_symbol_table(Symbol *head)
-{
-    while (head)
-    {
+void free_symbol_table(Symbol *head) {
+    while (head) {
         Symbol *next = head->next;
         free(head->name);
         free(head);
