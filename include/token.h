@@ -28,12 +28,18 @@ typedef enum {
     TOKEN_CHAR_LITERAL, ///< Character literal (e.g., 'a')
     TOKEN_STRING_LITERAL, ///< String literal (e.g., "hello")
 
-    // Operators
+    // Arithmetic Operators
     TOKEN_ASSIGN, ///< '=' assignment operator
     TOKEN_PLUS, ///< '+' addition operator
     TOKEN_MINUS, ///< '-' subtraction operator
     TOKEN_STAR, ///< '*' multiplication operator
     TOKEN_SLASH, ///< '/' division operator
+
+    // Logical Operators
+    TOKEN_AND, ///< '&&' logical AND
+    TOKEN_OR, ///< '||' logical OR
+    TOKEN_NOT, ///< '!' logical NOT
+    TOKEN_XOR, ///< '^' logical XOR
 
     // Punctuation
     TOKEN_SEMICOLON, ///< ';' statement terminator

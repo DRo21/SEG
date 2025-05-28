@@ -44,6 +44,23 @@ ASTNode *create_binary_expr_node(TokenType op, ASTNode *left, ASTNode *right) {
     return node;
 }
 
+ASTNode *create_unary_expr_node(TokenType op, ASTNode *operand) {
+    ASTNode *node = malloc(sizeof(ASTNode));
+    if (!node) {
+        fprintf(stderr, "Error: Out of memory\n");
+        exit(1);
+    }
+    node->type = AST_UNARY_EXPR;
+    node->op = op;
+    node->left = operand;
+    node->right = NULL;
+    node->result_type = TYPE_BOOL;
+    node->name = node->literal = NULL;
+    node->value = NULL;
+    node->next = NULL;
+    return node;
+}
+
 ASTNode *create_literal_node(const char *value, VarType type) {
     ASTNode *node = malloc(sizeof(ASTNode));
     if (!node) {

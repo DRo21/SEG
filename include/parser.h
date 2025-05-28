@@ -3,6 +3,7 @@
  * @brief Parser interface for the SEG language compiler.
  *        Converts token streams into an Abstract Syntax Tree (AST) for variable declarations and expressions.
  *        Supports type checking and warnings for type promotions.
+ *        Handles arithmetic and logical operators (AND, OR, XOR, NOT).
  * @author Dario Romandini
  */
 
@@ -46,7 +47,7 @@ ASTNode *parse_program(Parser *parser);
 ASTNode *parse_var_decl(Parser *parser);
 
 /**
- * @brief Parse an expression with support for +, -, *, / and literals.
+ * @brief Parse an expression, including arithmetic (+, -, *, /) and logical (&&, ||, ^, !) operators.
  * @param parser Pointer to the parser state.
  * @return Pointer to the AST node representing the expression.
  */

@@ -28,9 +28,19 @@ static void expect(Parser *parser, TokenType type) {
 
 ASTNode *parse_expression(Parser *parser);
 
+ASTNode *parse_logical_or(Parser *parser);
+
+ASTNode *parse_logical_xor(Parser *parser);
+
+ASTNode *parse_logical_and(Parser *parser);
+
+ASTNode *parse_equality(Parser *parser);
+
 ASTNode *parse_term(Parser *parser);
 
 ASTNode *parse_factor(Parser *parser);
+
+ASTNode *parse_unary(Parser *parser);
 
 void parser_init(Parser *parser, Lexer *lexer) {
     parser->lexer = lexer;
@@ -67,6 +77,14 @@ ASTNode *parse_var_decl(Parser *parser) {
 
     ASTNode *value = parse_expression(parser);
 
+    if (var_type == TYPE_BOOL) {
+        value->result_type = TYPE_BOOL;
+    } else if (var_type == TYPE_INT || var_type == TYPE_FLOAT) {
+        if (value->result_type == TYPE_BOOL) {
+            value->result_type = TYPE_INT;
+        }
+    }
+
     if (value->result_type != var_type) {
         printf("[Parser Warning] Type mismatch in assignment to '%s': declared %s, assigned %s (line %d).\n",
                name, token_type_to_string(var_type), token_type_to_string(value->result_type),
@@ -80,32 +98,52 @@ ASTNode *parse_var_decl(Parser *parser) {
 }
 
 ASTNode *parse_expression(Parser *parser) {
-    ASTNode *node = parse_term(parser);
+    return parse_logical_or(parser);
+}
 
-    while (parser->current_token.type == TOKEN_PLUS || parser->current_token.type == TOKEN_MINUS) {
+ASTNode *parse_logical_or(Parser *parser) {
+    ASTNode *node = parse_logical_xor(parser);
+    while (parser->current_token.type == TOKEN_OR) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *right = parse_logical_xor(parser);
+        node = create_binary_expr_node(op, node, right);
+        node->result_type = TYPE_BOOL;
+    }
+    return node;
+}
+
+ASTNode *parse_logical_xor(Parser *parser) {
+    ASTNode *node = parse_logical_and(parser);
+    while (parser->current_token.type == TOKEN_XOR) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *right = parse_logical_and(parser);
+        node = create_binary_expr_node(op, node, right);
+        node->result_type = TYPE_BOOL;
+    }
+    return node;
+}
+
+ASTNode *parse_logical_and(Parser *parser) {
+    ASTNode *node = parse_term(parser);
+    while (parser->current_token.type == TOKEN_AND) {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_term(parser);
-
-        if (node->result_type != right->result_type) {
-            node->result_type = TYPE_FLOAT;
-            right->result_type = TYPE_FLOAT;
-        }
-
         node = create_binary_expr_node(op, node, right);
-        node->result_type = right->result_type;
+        node->result_type = TYPE_BOOL;
     }
-
     return node;
 }
 
 ASTNode *parse_term(Parser *parser) {
-    ASTNode *node = parse_factor(parser);
-
-    while (parser->current_token.type == TOKEN_STAR || parser->current_token.type == TOKEN_SLASH) {
+    ASTNode *node = parse_unary(parser);
+    while (parser->current_token.type == TOKEN_PLUS || parser->current_token.type == TOKEN_MINUS ||
+           parser->current_token.type == TOKEN_STAR || parser->current_token.type == TOKEN_SLASH) {
         TokenType op = parser->current_token.type;
         advance(parser);
-        ASTNode *right = parse_factor(parser);
+        ASTNode *right = parse_unary(parser);
 
         if (node->result_type != right->result_type) {
             node->result_type = TYPE_FLOAT;
@@ -115,8 +153,17 @@ ASTNode *parse_term(Parser *parser) {
         node = create_binary_expr_node(op, node, right);
         node->result_type = right->result_type;
     }
-
     return node;
+}
+
+ASTNode *parse_unary(Parser *parser) {
+    if (parser->current_token.type == TOKEN_NOT) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *operand = parse_unary(parser);
+        return create_unary_expr_node(op, operand);
+    }
+    return parse_factor(parser);
 }
 
 ASTNode *parse_factor(Parser *parser) {
