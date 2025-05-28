@@ -4,6 +4,7 @@
  *        Defines token types and token structure used by the lexer and parser.
  *        This is the fundamental unit of lexical analysis in SEG,
  *        representing keywords, identifiers, literals, and symbols in the source code.
+ *        Now includes support for equality (==, !=) and comparison operators (<, >, <=, >=).
  * @author Dario Romandini
  */
 
@@ -40,6 +41,16 @@ typedef enum {
     TOKEN_OR, ///< '||' logical OR
     TOKEN_NOT, ///< '!' logical NOT
     TOKEN_XOR, ///< '^' logical XOR
+
+    // Equality Operators
+    TOKEN_EQ, ///< '==' equality
+    TOKEN_NEQ, ///< '!=' inequality
+
+    // Comparison Operators
+    TOKEN_LT, ///< '<' less than
+    TOKEN_GT, ///< '>' greater than
+    TOKEN_LEQ, ///< '<=' less than or equal
+    TOKEN_GEQ, ///< '>=' greater than or equal
 
     // Punctuation
     TOKEN_SEMICOLON, ///< ';' statement terminator

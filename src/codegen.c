@@ -200,63 +200,66 @@ static void generate_expression(ASTNode *node, FILE *output, Symbol *symbols) {
         }
 
         case AST_BINARY_EXPR:
-            if (node->result_type == TYPE_FLOAT) {
-                generate_expression(node->right, output, symbols);
-                fprintf(output, "    sub rsp, 8\n");
-                fprintf(output, "    movsd [rsp], xmm0\n");
-                generate_expression(node->left, output, symbols);
-                fprintf(output, "    movsd xmm1, [rsp]\n");
-                fprintf(output, "    add rsp, 8\n");
+            generate_expression(node->right, output, symbols);
+            fprintf(output, "    push rax\n");
+            generate_expression(node->left, output, symbols);
+            fprintf(output, "    pop rbx\n");
 
-                switch (node->op) {
-                    case TOKEN_PLUS:
-                        fprintf(output, "    addsd xmm0, xmm1\n");
-                        break;
-                    case TOKEN_MINUS:
-                        fprintf(output, "    subsd xmm0, xmm1\n");
-                        break;
-                    case TOKEN_STAR:
-                        fprintf(output, "    mulsd xmm0, xmm1\n");
-                        break;
-                    case TOKEN_SLASH:
-                        fprintf(output, "    divsd xmm0, xmm1\n");
-                        break;
-                    default:
-                        fprintf(output, "    ; [unsupported float binary op]\n");
-                        break;
-                }
-            } else {
-                generate_expression(node->right, output, symbols);
-                fprintf(output, "    push rax\n");
-                generate_expression(node->left, output, symbols);
-                fprintf(output, "    pop rbx\n");
-
-                switch (node->op) {
-                    case TOKEN_PLUS:
-                        fprintf(output, "    add rax, rbx\n");
-                        break;
-                    case TOKEN_MINUS:
-                        fprintf(output, "    sub rax, rbx\n");
-                        break;
-                    case TOKEN_STAR:
-                        fprintf(output, "    imul rax, rbx\n");
-                        break;
-                    case TOKEN_SLASH:
-                        fprintf(output, "    cqo\n    idiv rbx\n");
-                        break;
-                    case TOKEN_AND:
-                        fprintf(output, "    and rax, rbx\n");
-                        break;
-                    case TOKEN_OR:
-                        fprintf(output, "    or rax, rbx\n");
-                        break;
-                    case TOKEN_XOR:
-                        fprintf(output, "    xor rax, rbx\n");
-                        break;
-                    default:
-                        fprintf(output, "    ; [unsupported binary op]\n");
-                        break;
-                }
+            switch (node->op) {
+                case TOKEN_PLUS:
+                    fprintf(output, "    add rax, rbx\n");
+                    break;
+                case TOKEN_MINUS:
+                    fprintf(output, "    sub rax, rbx\n");
+                    break;
+                case TOKEN_STAR:
+                    fprintf(output, "    imul rax, rbx\n");
+                    break;
+                case TOKEN_SLASH:
+                    fprintf(output, "    cqo\n    idiv rbx\n");
+                    break;
+                case TOKEN_AND:
+                    fprintf(output, "    and rax, rbx\n");
+                    break;
+                case TOKEN_OR:
+                    fprintf(output, "    or rax, rbx\n");
+                    break;
+                case TOKEN_XOR:
+                    fprintf(output, "    xor rax, rbx\n");
+                    break;
+                case TOKEN_EQ:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    sete al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                case TOKEN_NEQ:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    setne al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                case TOKEN_LT:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    setl al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                case TOKEN_LEQ:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    setle al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                case TOKEN_GT:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    setg al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                case TOKEN_GEQ:
+                    fprintf(output, "    cmp rax, rbx\n");
+                    fprintf(output, "    setge al\n");
+                    fprintf(output, "    movzx rax, al\n");
+                    break;
+                default:
+                    fprintf(output, "    ; [unsupported binary op]\n");
+                    break;
             }
             break;
 

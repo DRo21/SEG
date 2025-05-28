@@ -1,7 +1,7 @@
 /**
  * @file parser.c
  * @brief Parser implementation for the SEG language compiler.
- *        Handles variable declarations, expressions, literals, and type checking.
+ *        Handles variable declarations, expressions, literals, type checking, logical, equality, and comparison operators.
  * @author Dario Romandini
  */
 
@@ -36,11 +36,13 @@ ASTNode *parse_logical_and(Parser *parser);
 
 ASTNode *parse_equality(Parser *parser);
 
+ASTNode *parse_comparison(Parser *parser);
+
 ASTNode *parse_term(Parser *parser);
 
-ASTNode *parse_factor(Parser *parser);
-
 ASTNode *parse_unary(Parser *parser);
+
+ASTNode *parse_factor(Parser *parser);
 
 void parser_init(Parser *parser, Lexer *lexer) {
     parser->lexer = lexer;
@@ -126,8 +128,33 @@ ASTNode *parse_logical_xor(Parser *parser) {
 }
 
 ASTNode *parse_logical_and(Parser *parser) {
-    ASTNode *node = parse_term(parser);
+    ASTNode *node = parse_equality(parser);
     while (parser->current_token.type == TOKEN_AND) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *right = parse_equality(parser);
+        node = create_binary_expr_node(op, node, right);
+        node->result_type = TYPE_BOOL;
+    }
+    return node;
+}
+
+ASTNode *parse_equality(Parser *parser) {
+    ASTNode *node = parse_comparison(parser);
+    while (parser->current_token.type == TOKEN_EQ || parser->current_token.type == TOKEN_NEQ) {
+        TokenType op = parser->current_token.type;
+        advance(parser);
+        ASTNode *right = parse_comparison(parser);
+        node = create_binary_expr_node(op, node, right);
+        node->result_type = TYPE_BOOL;
+    }
+    return node;
+}
+
+ASTNode *parse_comparison(Parser *parser) {
+    ASTNode *node = parse_term(parser);
+    while (parser->current_token.type == TOKEN_LT || parser->current_token.type == TOKEN_GT ||
+           parser->current_token.type == TOKEN_LEQ || parser->current_token.type == TOKEN_GEQ) {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_term(parser);

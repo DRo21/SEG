@@ -2,7 +2,7 @@
  * @file lexer.c
  * @brief Lexer implementation for the SEG language compiler.
  *        Converts source code into a stream of tokens for parsing.
- *        Supports variable declarations, literals (int, float, bool, char, string), arithmetic operators, and parentheses.
+ *        Supports variable declarations, literals (int, float, bool, char, string), arithmetic, logical, equality, and comparison operators.
  * @author Dario Romandini
  */
 
@@ -102,7 +102,45 @@ Token lexer_next_token(Lexer *lexer) {
     token.lexeme[1] = '\0';
 
     switch (c) {
-        case '=': token.type = TOKEN_ASSIGN;
+        case '=':
+            if ((c = fgetc(lexer->source)) == '=') {
+                token.type = TOKEN_EQ;
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+            } else {
+                ungetc(c, lexer->source);
+                token.type = TOKEN_ASSIGN;
+            }
+            break;
+        case '!':
+            if ((c = fgetc(lexer->source)) == '=') {
+                token.type = TOKEN_NEQ;
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+            } else {
+                ungetc(c, lexer->source);
+                token.type = TOKEN_NOT;
+            }
+            break;
+        case '<':
+            if ((c = fgetc(lexer->source)) == '=') {
+                token.type = TOKEN_LEQ;
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+            } else {
+                ungetc(c, lexer->source);
+                token.type = TOKEN_LT;
+            }
+            break;
+        case '>':
+            if ((c = fgetc(lexer->source)) == '=') {
+                token.type = TOKEN_GEQ;
+                token.lexeme[1] = '=';
+                token.lexeme[2] = '\0';
+            } else {
+                ungetc(c, lexer->source);
+                token.type = TOKEN_GT;
+            }
             break;
         case '+': token.type = TOKEN_PLUS;
             break;
@@ -118,7 +156,8 @@ Token lexer_next_token(Lexer *lexer) {
             break;
         case ')': token.type = TOKEN_RPAREN;
             break;
-        case '&': if ((c = fgetc(lexer->source)) == '&') {
+        case '&':
+            if ((c = fgetc(lexer->source)) == '&') {
                 token.type = TOKEN_AND;
                 token.lexeme[1] = '&';
                 token.lexeme[2] = '\0';
@@ -127,7 +166,8 @@ Token lexer_next_token(Lexer *lexer) {
                 token.type = TOKEN_ERROR;
             }
             break;
-        case '|': if ((c = fgetc(lexer->source)) == '|') {
+        case '|':
+            if ((c = fgetc(lexer->source)) == '|') {
                 token.type = TOKEN_OR;
                 token.lexeme[1] = '|';
                 token.lexeme[2] = '\0';
@@ -135,8 +175,6 @@ Token lexer_next_token(Lexer *lexer) {
                 ungetc(c, lexer->source);
                 token.type = TOKEN_ERROR;
             }
-            break;
-        case '!': token.type = TOKEN_NOT;
             break;
         case '^': token.type = TOKEN_XOR;
             break;
@@ -176,6 +214,12 @@ const char *token_type_to_string(TokenType type) {
         case TOKEN_OR: return "OR";
         case TOKEN_NOT: return "NOT";
         case TOKEN_XOR: return "XOR";
+        case TOKEN_EQ: return "EQ";
+        case TOKEN_NEQ: return "NEQ";
+        case TOKEN_LT: return "LT";
+        case TOKEN_GT: return "GT";
+        case TOKEN_LEQ: return "LEQ";
+        case TOKEN_GEQ: return "GEQ";
         case TOKEN_SEMICOLON: return "SEMICOLON";
         case TOKEN_LPAREN: return "LPAREN";
         case TOKEN_RPAREN: return "RPAREN";
