@@ -142,7 +142,6 @@ ASTNode *parse_factor(Parser *parser) {
             break;
         case TOKEN_IDENTIFIER:
             node = create_identifier_node(parser->current_token.lexeme);
-            node->result_type = TYPE_INT;
             advance(parser);
             break;
         case TOKEN_LPAREN:
