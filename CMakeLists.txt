@@ -14,6 +14,7 @@ set(SOURCES
     src/ast.c
     src/codegen.c
     src/symbol.c
+    src/token.c
 )
 
 # Executable

@@ -1,44 +1,48 @@
 /**
  * @file symbol.h
- * @brief Symbol table for SEG compiler. Maps variable names to assembly labels and types.
+ * @brief Symbol table interface for the SEG language compiler.
+ *        Manages variable names and types for semantic analysis and code generation.
+ *        Supports variable lookups and insertion during parsing and code generation phases.
  * @author Dario Romandini
  */
 
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
+#include "type.h"
 #include "ast.h"
 
-typedef struct Symbol {
-    char *name; ///< Variable name (e.g., "x")
-    VarType type; ///< Variable type (int/float)
-    struct Symbol *next; ///< Linked list pointer
+/**
+ * @brief Structure representing a symbol table entry.
+ */
+typedef struct Symbol
+{
+    char *name;          /**< Variable name */
+    VarType type;        /**< Variable type */
+    struct Symbol *next; /**< Pointer to the next symbol in the table (linked list) */
 } Symbol;
 
 /**
- * @brief Add a variable to the symbol table.
- *
- * @param head Pointer to the symbol table (linked list head)
- * @param name Variable name
- * @param type Variable type (int/float)
- * @return Updated head of the symbol table
+ * @brief Adds a new symbol to the symbol table.
+ * @param table Pointer to the head of the symbol table.
+ * @param name The variable name.
+ * @param type The variable type.
+ * @return Updated head of the symbol table.
  */
-Symbol *add_symbol(Symbol *head, const char *name, VarType type);
+Symbol *add_symbol(Symbol *table, const char *name, VarType type);
 
 /**
- * @brief Lookup a variable in the symbol table.
- *
- * @param head Pointer to the symbol table (linked list head)
- * @param name Variable name
- * @return Pointer to the symbol if found, or NULL
+ * @brief Looks up a symbol by name in the symbol table.
+ * @param table Pointer to the head of the symbol table.
+ * @param name The variable name to search for.
+ * @return Pointer to the Symbol if found, NULL otherwise.
  */
-Symbol *lookup_symbol(Symbol *head, const char *name);
+Symbol *lookup_symbol(Symbol *table, const char *name);
 
 /**
- * @brief Free the symbol table.
- *
- * @param head Pointer to the symbol table
+ * @brief Frees the entire symbol table, including all entries.
+ * @param table Pointer to the head of the symbol table.
  */
-void free_symbol_table(Symbol *head);
+void free_symbol_table(Symbol *table);
 
 #endif // SYMBOL_H

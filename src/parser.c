@@ -1,7 +1,8 @@
 /**
  * @file parser.c
  * @brief Parser implementation for the SEG language compiler.
- *        Handles variable declarations, expressions, literals, type checking, logical, equality, and comparison operators.
+ *        Handles variable declarations, expressions, control flow (if/else if/else),
+ *        type checking, and basic error reporting. Promotes type consistency and modular AST generation.
  * @author Dario Romandini
  */
 
@@ -9,15 +10,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
+#include "lexer.h"
 #include "symbol.h"
+#include "token.h"
 
-static void advance(Parser *parser) {
+static void advance(Parser *parser)
+{
     token_free(&parser->current_token);
     parser->current_token = lexer_next_token(parser->lexer);
 }
 
-static void expect(Parser *parser, TokenType type) {
-    if (parser->current_token.type != type) {
+static void expect(Parser *parser, TokenType type)
+{
+    if (parser->current_token.type != type)
+    {
         printf("[Parser Error] Expected %s, got %s (line %d)\n",
                token_type_to_string(type),
                token_type_to_string(parser->current_token.type),
@@ -26,47 +32,72 @@ static void expect(Parser *parser, TokenType type) {
     }
 }
 
-ASTNode *parse_expression(Parser *parser);
-
-ASTNode *parse_logical_or(Parser *parser);
-
-ASTNode *parse_logical_xor(Parser *parser);
-
-ASTNode *parse_logical_and(Parser *parser);
-
-ASTNode *parse_equality(Parser *parser);
-
-ASTNode *parse_comparison(Parser *parser);
-
-ASTNode *parse_term(Parser *parser);
-
-ASTNode *parse_unary(Parser *parser);
-
-ASTNode *parse_factor(Parser *parser);
-
-void parser_init(Parser *parser, Lexer *lexer) {
+void parser_init(Parser *parser, Lexer *lexer)
+{
     parser->lexer = lexer;
     parser->current_token = lexer_next_token(lexer);
 }
 
-ASTNode *parse_var_decl(Parser *parser) {
-    VarType var_type;
+ASTNode *parse_program(Parser *parser)
+{
+    ASTNode *head = NULL, *current = NULL;
+    while (parser->current_token.type != TOKEN_EOF)
+    {
+        ASTNode *node = parse_statement(parser);
+        if (!head)
+            head = node;
+        else
+            current->next = node;
+        current = node;
+    }
+    return head;
+}
 
-    switch (parser->current_token.type) {
-        case TOKEN_INT: var_type = TYPE_INT;
-            break;
-        case TOKEN_FLOAT: var_type = TYPE_FLOAT;
-            break;
-        case TOKEN_BOOL: var_type = TYPE_BOOL;
-            break;
-        case TOKEN_CHAR: var_type = TYPE_CHAR;
-            break;
-        case TOKEN_STRING: var_type = TYPE_STRING;
-            break;
-        default:
-            printf("[Parser Error] Expected type keyword, got %s\n",
-                   token_type_to_string(parser->current_token.type));
-            exit(1);
+ASTNode *parse_statement(Parser *parser)
+{
+    if (parser->current_token.type == TOKEN_IF)
+    {
+        return parse_if_statement(parser);
+    }
+    else if (parser->current_token.type == TOKEN_INT || parser->current_token.type == TOKEN_FLOAT ||
+             parser->current_token.type == TOKEN_BOOL || parser->current_token.type == TOKEN_CHAR ||
+             parser->current_token.type == TOKEN_STRING)
+    {
+        return parse_var_decl(parser);
+    }
+    else
+    {
+        printf("[Parser Error] Unexpected token: %s (line %d)\n",
+               token_type_to_string(parser->current_token.type),
+               parser->current_token.line);
+        exit(1);
+    }
+}
+
+ASTNode *parse_var_decl(Parser *parser)
+{
+    VarType var_type;
+    switch (parser->current_token.type)
+    {
+    case TOKEN_INT:
+        var_type = TYPE_INT;
+        break;
+    case TOKEN_FLOAT:
+        var_type = TYPE_FLOAT;
+        break;
+    case TOKEN_BOOL:
+        var_type = TYPE_BOOL;
+        break;
+    case TOKEN_CHAR:
+        var_type = TYPE_CHAR;
+        break;
+    case TOKEN_STRING:
+        var_type = TYPE_STRING;
+        break;
+    default:
+        printf("[Parser Error] Expected type keyword, got %s\n",
+               token_type_to_string(parser->current_token.type));
+        exit(1);
     }
 
     advance(parser);
@@ -79,15 +110,18 @@ ASTNode *parse_var_decl(Parser *parser) {
 
     ASTNode *value = parse_expression(parser);
 
-    if (var_type == TYPE_BOOL) {
+    if (var_type == TYPE_BOOL)
         value->result_type = TYPE_BOOL;
-    } else if (var_type == TYPE_INT || var_type == TYPE_FLOAT) {
-        if (value->result_type == TYPE_BOOL) {
+    else if (var_type == TYPE_INT || var_type == TYPE_FLOAT)
+    {
+        if (value->result_type == TYPE_BOOL)
+        {
             value->result_type = TYPE_INT;
         }
     }
 
-    if (value->result_type != var_type) {
+    if (value->result_type != var_type)
+    {
         printf("[Parser Warning] Type mismatch in assignment to '%s': declared %s, assigned %s (line %d).\n",
                name, token_type_to_string(var_type), token_type_to_string(value->result_type),
                parser->current_token.line);
@@ -99,13 +133,81 @@ ASTNode *parse_var_decl(Parser *parser) {
     return create_var_decl_node(var_type, name, value);
 }
 
-ASTNode *parse_expression(Parser *parser) {
+ASTNode *parse_if_statement(Parser *parser)
+{
+    expect(parser, TOKEN_IF);
+    advance(parser);
+
+    expect(parser, TOKEN_LPAREN);
+    advance(parser);
+    ASTNode *condition = parse_expression(parser);
+    expect(parser, TOKEN_RPAREN);
+    advance(parser);
+
+    expect(parser, TOKEN_LBRACE);
+    advance(parser);
+    ASTNode *then_branch = parse_block(parser);
+
+    ASTNode *else_branch = NULL;
+    if (parser->current_token.type == TOKEN_ELSE)
+    {
+        advance(parser);
+        if (parser->current_token.type == TOKEN_IF)
+        {
+            else_branch = parse_if_statement(parser);
+        }
+        else
+        {
+            expect(parser, TOKEN_LBRACE);
+            advance(parser);
+            else_branch = parse_block(parser);
+        }
+    }
+
+    return create_if_statement_node(condition, then_branch, else_branch);
+}
+
+ASTNode *parse_block(Parser *parser)
+{
+    ASTNode *head = NULL, *current = NULL;
+    while (parser->current_token.type != TOKEN_RBRACE && parser->current_token.type != TOKEN_EOF)
+    {
+        ASTNode *node = parse_statement(parser);
+        if (!head)
+            head = node;
+        else
+            current->next = node;
+        current = node;
+    }
+
+    expect(parser, TOKEN_RBRACE);
+    advance(parser);
+
+    return head;
+}
+
+/* Expression parsing functions */
+
+ASTNode *parse_expression(Parser *parser);
+ASTNode *parse_logical_or(Parser *parser);
+ASTNode *parse_logical_xor(Parser *parser);
+ASTNode *parse_logical_and(Parser *parser);
+ASTNode *parse_equality(Parser *parser);
+ASTNode *parse_comparison(Parser *parser);
+ASTNode *parse_term(Parser *parser);
+ASTNode *parse_unary(Parser *parser);
+ASTNode *parse_factor(Parser *parser);
+
+ASTNode *parse_expression(Parser *parser)
+{
     return parse_logical_or(parser);
 }
 
-ASTNode *parse_logical_or(Parser *parser) {
+ASTNode *parse_logical_or(Parser *parser)
+{
     ASTNode *node = parse_logical_xor(parser);
-    while (parser->current_token.type == TOKEN_OR) {
+    while (parser->current_token.type == TOKEN_OR)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_logical_xor(parser);
@@ -115,9 +217,11 @@ ASTNode *parse_logical_or(Parser *parser) {
     return node;
 }
 
-ASTNode *parse_logical_xor(Parser *parser) {
+ASTNode *parse_logical_xor(Parser *parser)
+{
     ASTNode *node = parse_logical_and(parser);
-    while (parser->current_token.type == TOKEN_XOR) {
+    while (parser->current_token.type == TOKEN_XOR)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_logical_and(parser);
@@ -127,9 +231,11 @@ ASTNode *parse_logical_xor(Parser *parser) {
     return node;
 }
 
-ASTNode *parse_logical_and(Parser *parser) {
+ASTNode *parse_logical_and(Parser *parser)
+{
     ASTNode *node = parse_equality(parser);
-    while (parser->current_token.type == TOKEN_AND) {
+    while (parser->current_token.type == TOKEN_AND)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_equality(parser);
@@ -139,9 +245,11 @@ ASTNode *parse_logical_and(Parser *parser) {
     return node;
 }
 
-ASTNode *parse_equality(Parser *parser) {
+ASTNode *parse_equality(Parser *parser)
+{
     ASTNode *node = parse_comparison(parser);
-    while (parser->current_token.type == TOKEN_EQ || parser->current_token.type == TOKEN_NEQ) {
+    while (parser->current_token.type == TOKEN_EQ || parser->current_token.type == TOKEN_NEQ)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_comparison(parser);
@@ -151,10 +259,12 @@ ASTNode *parse_equality(Parser *parser) {
     return node;
 }
 
-ASTNode *parse_comparison(Parser *parser) {
+ASTNode *parse_comparison(Parser *parser)
+{
     ASTNode *node = parse_term(parser);
     while (parser->current_token.type == TOKEN_LT || parser->current_token.type == TOKEN_GT ||
-           parser->current_token.type == TOKEN_LEQ || parser->current_token.type == TOKEN_GEQ) {
+           parser->current_token.type == TOKEN_LEQ || parser->current_token.type == TOKEN_GEQ)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_term(parser);
@@ -164,27 +274,34 @@ ASTNode *parse_comparison(Parser *parser) {
     return node;
 }
 
-ASTNode *parse_term(Parser *parser) {
+ASTNode *parse_term(Parser *parser)
+{
     ASTNode *node = parse_unary(parser);
     while (parser->current_token.type == TOKEN_PLUS || parser->current_token.type == TOKEN_MINUS ||
-           parser->current_token.type == TOKEN_STAR || parser->current_token.type == TOKEN_SLASH) {
+           parser->current_token.type == TOKEN_STAR || parser->current_token.type == TOKEN_SLASH)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *right = parse_unary(parser);
-
-        if (node->result_type != right->result_type) {
+        if (node->result_type != right->result_type)
+        {
+            printf("[Parser Warning] Type mismatch in arithmetic operation: %s vs %s (line %d).\n",
+                   token_type_to_string(node->result_type),
+                   token_type_to_string(right->result_type),
+                   parser->current_token.line);
             node->result_type = TYPE_FLOAT;
             right->result_type = TYPE_FLOAT;
         }
-
         node = create_binary_expr_node(op, node, right);
         node->result_type = right->result_type;
     }
     return node;
 }
 
-ASTNode *parse_unary(Parser *parser) {
-    if (parser->current_token.type == TOKEN_NOT) {
+ASTNode *parse_unary(Parser *parser)
+{
+    if (parser->current_token.type == TOKEN_NOT)
+    {
         TokenType op = parser->current_token.type;
         advance(parser);
         ASTNode *operand = parse_unary(parser);
@@ -193,55 +310,41 @@ ASTNode *parse_unary(Parser *parser) {
     return parse_factor(parser);
 }
 
-ASTNode *parse_factor(Parser *parser) {
+ASTNode *parse_factor(Parser *parser)
+{
     ASTNode *node = NULL;
-
-    switch (parser->current_token.type) {
-        case TOKEN_NUMBER:
-            node = create_literal_node(parser->current_token.lexeme,
-                                       strchr(parser->current_token.lexeme, '.') ? TYPE_FLOAT : TYPE_INT);
-            advance(parser);
-            break;
-        case TOKEN_BOOL_LITERAL:
-            node = create_literal_node(parser->current_token.lexeme, TYPE_BOOL);
-            advance(parser);
-            break;
-        case TOKEN_CHAR_LITERAL:
-            node = create_literal_node(parser->current_token.lexeme, TYPE_CHAR);
-            advance(parser);
-            break;
-        case TOKEN_STRING_LITERAL:
-            node = create_literal_node(parser->current_token.lexeme, TYPE_STRING);
-            advance(parser);
-            break;
-        case TOKEN_IDENTIFIER:
-            node = create_identifier_node(parser->current_token.lexeme);
-            advance(parser);
-            break;
-        case TOKEN_LPAREN:
-            advance(parser);
-            node = parse_expression(parser);
-            expect(parser, TOKEN_RPAREN);
-            advance(parser);
-            break;
-        default:
-            printf("[Parser Error] Unexpected token: %s\n",
-                   token_type_to_string(parser->current_token.type));
-            exit(1);
+    switch (parser->current_token.type)
+    {
+    case TOKEN_NUMBER:
+        node = create_literal_node(parser->current_token.lexeme,
+                                   strchr(parser->current_token.lexeme, '.') ? TYPE_FLOAT : TYPE_INT);
+        advance(parser);
+        break;
+    case TOKEN_BOOL_LITERAL:
+        node = create_literal_node(parser->current_token.lexeme, TYPE_BOOL);
+        advance(parser);
+        break;
+    case TOKEN_CHAR_LITERAL:
+        node = create_literal_node(parser->current_token.lexeme, TYPE_CHAR);
+        advance(parser);
+        break;
+    case TOKEN_STRING_LITERAL:
+        node = create_literal_node(parser->current_token.lexeme, TYPE_STRING);
+        advance(parser);
+        break;
+    case TOKEN_IDENTIFIER:
+        node = create_identifier_node(parser->current_token.lexeme);
+        advance(parser);
+        break;
+    case TOKEN_LPAREN:
+        advance(parser);
+        node = parse_expression(parser);
+        expect(parser, TOKEN_RPAREN);
+        advance(parser);
+        break;
+    default:
+        printf("[Parser Error] Unexpected token: %s\n", token_type_to_string(parser->current_token.type));
+        exit(1);
     }
-
     return node;
-}
-
-ASTNode *parse_program(Parser *parser) {
-    ASTNode *head = NULL, *current = NULL;
-
-    while (parser->current_token.type != TOKEN_EOF) {
-        ASTNode *node = parse_var_decl(parser);
-        if (!head) head = node;
-        else current->next = node;
-        current = node;
-    }
-
-    return head;
 }

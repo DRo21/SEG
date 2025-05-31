@@ -1,0 +1,28 @@
+int a = 10;
+float b = 5.5;
+bool c = true;
+char d = 'x';
+string e = "Hello SEG";
+
+int sum = a + 5;
+float div = b / 2.0;
+int combined = a * 2 + 3 - 1;
+
+bool result1 = (a < 20) && (c == true);
+bool result2 = (a > 5) || (c == false);
+
+int final_result = 0;
+
+if (a > 10) {
+    final_result = 1;
+} else if (a == 10) {
+    final_result = 2;
+} else {
+    final_result = 3;
+}
+
+if ((a + sum) > 20) {
+    final_result = final_result + 10;
+} else {
+    final_result = final_result - 5;
+}

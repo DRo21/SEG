@@ -2,9 +2,7 @@
  * @file token.h
  * @brief Token definitions for the SEG language compiler.
  *        Defines token types and token structure used by the lexer and parser.
- *        This is the fundamental unit of lexical analysis in SEG,
- *        representing keywords, identifiers, literals, and symbols in the source code.
- *        Now includes support for equality (==, !=) and comparison operators (<, >, <=, >=).
+ *        Includes keywords, identifiers, literals, operators, and control flow tokens.
  * @author Dario Romandini
  */
 
@@ -13,63 +11,72 @@
 
 /**
  * @brief Enumerated types for all possible SEG tokens.
- *
- * This includes keywords (e.g., int, float, bool, char, string), identifiers, literals, operators, and punctuation.
  */
-typedef enum {
-    TOKEN_EOF, ///< End of file marker
-    TOKEN_INT, ///< 'int' keyword
-    TOKEN_FLOAT, ///< 'float' keyword
-    TOKEN_BOOL, ///< 'bool' keyword
-    TOKEN_CHAR, ///< 'char' keyword
-    TOKEN_STRING, ///< 'string' keyword
-    TOKEN_IDENTIFIER, ///< Variable name or user-defined identifier
-    TOKEN_NUMBER, ///< Numeric literal (integer or float)
-    TOKEN_BOOL_LITERAL, ///< Boolean literal (true/false)
-    TOKEN_CHAR_LITERAL, ///< Character literal (e.g., 'a')
-    TOKEN_STRING_LITERAL, ///< String literal (e.g., "hello")
+typedef enum
+{
+    TOKEN_EOF,
+    TOKEN_INT,
+    TOKEN_FLOAT,
+    TOKEN_BOOL,
+    TOKEN_CHAR,
+    TOKEN_STRING,
+    TOKEN_IDENTIFIER,
+    TOKEN_NUMBER,
+    TOKEN_BOOL_LITERAL,
+    TOKEN_CHAR_LITERAL,
+    TOKEN_STRING_LITERAL,
 
-    // Arithmetic Operators
-    TOKEN_ASSIGN, ///< '=' assignment operator
-    TOKEN_PLUS, ///< '+' addition operator
-    TOKEN_MINUS, ///< '-' subtraction operator
-    TOKEN_STAR, ///< '*' multiplication operator
-    TOKEN_SLASH, ///< '/' division operator
+    TOKEN_ASSIGN,
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_STAR,
+    TOKEN_SLASH,
 
-    // Logical Operators
-    TOKEN_AND, ///< '&&' logical AND
-    TOKEN_OR, ///< '||' logical OR
-    TOKEN_NOT, ///< '!' logical NOT
-    TOKEN_XOR, ///< '^' logical XOR
+    TOKEN_AND,
+    TOKEN_OR,
+    TOKEN_NOT,
+    TOKEN_XOR,
 
-    // Equality Operators
-    TOKEN_EQ, ///< '==' equality
-    TOKEN_NEQ, ///< '!=' inequality
+    TOKEN_EQ,
+    TOKEN_NEQ,
+    TOKEN_LT,
+    TOKEN_GT,
+    TOKEN_LEQ,
+    TOKEN_GEQ,
 
-    // Comparison Operators
-    TOKEN_LT, ///< '<' less than
-    TOKEN_GT, ///< '>' greater than
-    TOKEN_LEQ, ///< '<=' less than or equal
-    TOKEN_GEQ, ///< '>=' greater than or equal
+    TOKEN_IF,
+    TOKEN_ELSE,
 
-    // Punctuation
-    TOKEN_SEMICOLON, ///< ';' statement terminator
-    TOKEN_LPAREN, ///< '(' left parenthesis
-    TOKEN_RPAREN, ///< ')' right parenthesis
+    TOKEN_SEMICOLON,
+    TOKEN_LPAREN,
+    TOKEN_RPAREN,
+    TOKEN_LBRACE,
+    TOKEN_RBRACE,
 
-    // Error handling
-    TOKEN_ERROR ///< Unknown or invalid token
+    TOKEN_ERROR
 } TokenType;
 
 /**
  * @brief Token structure representing a single lexeme.
- *
- * Contains the type of the token, its textual value (lexeme), and the line number for error reporting.
  */
-typedef struct {
-    TokenType type; ///< The type of token (from TokenType enum)
-    char *lexeme; ///< The string representation of the token (e.g., "int", "x", "5")
-    int line; ///< Line number where the token was found
+typedef struct
+{
+    TokenType type; /**< Type of token */
+    char *lexeme;   /**< Textual value of the token */
+    int line;       /**< Line number for error reporting */
 } Token;
+
+/**
+ * @brief Converts a TokenType to a human-readable string.
+ * @param type The TokenType to convert.
+ * @return A string representing the token type.
+ */
+const char *token_type_to_string(TokenType type);
+
+/**
+ * @brief Frees memory allocated by a token's lexeme.
+ * @param token The token whose lexeme is to be freed.
+ */
+void token_free(Token *token);
 
 #endif // TOKEN_H

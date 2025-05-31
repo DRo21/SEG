@@ -1,5 +1,0 @@
-bool c = true;
-char d = 'z';
-string e = "hello";
-int x = 5;
-float y = 3.14;
